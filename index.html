@@ -51,11 +51,13 @@
             </span>
             Fleet
           </button>
+          <span class="nav-flight" aria-hidden="true"></span>
         </nav>
 
         <div class="top-actions">
           <button class="icon-button" id="refreshButton" type="button" aria-label="最新データを取得">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.6 6.4A7.8 7.8 0 0 0 4.4 11H2l3.7 3.7L9.4 11H7a5.3 5.3 0 0 1 9-3.8l1.6-1.6zM6.4 17.6A7.8 7.8 0 0 0 19.6 13H22l-3.7-3.7L14.6 13H17a5.3 5.3 0 0 1-9 3.8z" /></svg>
+            <span class="refresh-rocket" aria-hidden="true"></span>
           </button>
           <button class="install-button" id="installButton" type="button" hidden>Install</button>
         </div>
@@ -86,6 +88,7 @@
           </span>
           Fleet
         </button>
+        <span class="nav-flight" aria-hidden="true"></span>
       </nav>
 
       <main>
@@ -99,8 +102,13 @@
                 <p class="hero-copy">次の打ち上げ、今年のペース、累計実績をひと目で。</p>
 
                 <article class="next-card" id="nextMissionCard">
-                  <div class="mobile-visual-card" aria-hidden="true">
+                  <div class="mobile-visual-card hero-visual" aria-hidden="true">
                     <img src="assets/launch-hero.png" alt="" />
+                    <span class="launch-animation">
+                      <span class="rocket-silhouette"></span>
+                      <span class="rocket-flame"></span>
+                      <span class="launch-smoke"></span>
+                    </span>
                   </div>
                   <div class="section-kicker">NEXT LAUNCH</div>
                   <h2 id="nextMissionName">データ取得中</h2>

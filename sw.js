@@ -1,4 +1,4 @@
-const CACHE_NAME = "spacex-tracker-v6";
+const CACHE_NAME = "spacex-tracker-v7";
 const APP_ASSETS = [
   "./",
   "./index.html",

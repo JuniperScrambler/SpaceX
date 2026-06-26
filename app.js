@@ -5,6 +5,8 @@ const PREVIOUS_URL = `${API_ROOT}/previous/?search=SpaceX&limit=150&ordering=-ne
 const CACHE_KEY = "spacex-tracker-cache-v1";
 const FAVORITES_KEY = "spacex-tracker-favorites";
 const TZ_KEY = "spacex-tracker-timezone";
+const VIEW_ORDER = ["home", "launches", "stats", "fleet"];
+const SWIPE_THRESHOLD = 58;
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const state = {
@@ -19,9 +21,12 @@ const state = {
   timeZoneMode: localStorage.getItem(TZ_KEY) || "local",
   favorites: new Set(JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]")),
   deferredInstallPrompt: null,
+  swipeStart: null,
 };
 
 const els = {
+  main: document.querySelector("main"),
+  navBars: document.querySelectorAll(".nav-tabs"),
   navTabs: document.querySelectorAll(".nav-tab"),
   jumpButtons: document.querySelectorAll("[data-view-jump]"),
   refreshButton: document.getElementById("refreshButton"),
@@ -29,6 +34,7 @@ const els = {
   sourceLabel: document.getElementById("sourceLabel"),
   statusDot: document.getElementById("statusDot"),
   heroMetrics: document.getElementById("heroMetrics"),
+  nextMissionCard: document.getElementById("nextMissionCard"),
   nextMissionName: document.getElementById("nextMissionName"),
   nextMissionTime: document.getElementById("nextMissionTime"),
   nextMissionPad: document.getElementById("nextMissionPad"),
@@ -56,9 +62,12 @@ const els = {
 init();
 
 function init() {
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
   bindUi();
   setTimeZoneButtons();
   setView(getInitialView(), { replace: true, scroll: false });
+  window.scrollTo(0, 0);
+  window.addEventListener("load", () => window.scrollTo(0, 0), { once: true });
   primeInitialData();
   loadData();
   window.setInterval(renderCountdown, 1000);
@@ -75,6 +84,7 @@ function bindUi() {
   });
 
   els.refreshButton.addEventListener("click", () => loadData({ force: true }));
+  bindSwipeNavigation();
 
   els.launchSearch.addEventListener("input", (event) => {
     state.search = event.target.value.trim().toLowerCase();
@@ -126,58 +136,136 @@ function bindUi() {
 
 function getInitialView() {
   const viewName = window.location.hash.replace("#", "");
-  return document.getElementById(viewName)?.classList.contains("view") ? viewName : "home";
+  return VIEW_ORDER.includes(viewName) && document.getElementById(viewName)?.classList.contains("view") ? viewName : "home";
 }
 
 function setView(viewName, options = {}) {
+  const nextView = VIEW_ORDER.includes(viewName) ? viewName : "home";
   document.querySelectorAll(".view").forEach((view) => {
-    view.classList.toggle("is-active", view.id === viewName);
+    view.classList.toggle("is-active", view.id === nextView);
   });
   els.navTabs.forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.view === viewName);
+    button.classList.toggle("is-active", button.dataset.view === nextView);
   });
+  updateNavFlight(nextView);
   if (options.replace) {
-    history.replaceState(null, "", `#${viewName}`);
-  } else if (window.location.hash !== `#${viewName}`) {
-    history.pushState(null, "", `#${viewName}`);
+    history.replaceState(null, "", `#${nextView}`);
+  } else if (window.location.hash !== `#${nextView}`) {
+    history.pushState(null, "", `#${nextView}`);
   }
   if (options.scroll !== false) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 }
 
+function updateNavFlight(viewName) {
+  const index = Math.max(0, VIEW_ORDER.indexOf(viewName));
+  els.navBars.forEach((nav) => {
+    nav.style.setProperty("--nav-index", index);
+  });
+}
+
+function bindSwipeNavigation() {
+  if (!els.main) return;
+
+  els.main.addEventListener(
+    "touchstart",
+    (event) => {
+      if (event.touches.length !== 1 || shouldIgnoreSwipe(event.target)) {
+        state.swipeStart = null;
+        return;
+      }
+      const touch = event.touches[0];
+      state.swipeStart = {
+        x: touch.clientX,
+        y: touch.clientY,
+        time: Date.now(),
+      };
+    },
+    { passive: true },
+  );
+
+  els.main.addEventListener(
+    "touchend",
+    (event) => {
+      if (!state.swipeStart || event.changedTouches.length !== 1) return;
+      const touch = event.changedTouches[0];
+      const deltaX = touch.clientX - state.swipeStart.x;
+      const deltaY = touch.clientY - state.swipeStart.y;
+      const duration = Date.now() - state.swipeStart.time;
+      state.swipeStart = null;
+
+      if (duration > 900) return;
+      if (Math.abs(deltaX) < SWIPE_THRESHOLD) return;
+      if (Math.abs(deltaX) < Math.abs(deltaY) * 1.35) return;
+
+      setAdjacentView(deltaX < 0 ? 1 : -1);
+    },
+    { passive: true },
+  );
+
+  els.main.addEventListener(
+    "touchcancel",
+    () => {
+      state.swipeStart = null;
+    },
+    { passive: true },
+  );
+}
+
+function shouldIgnoreSwipe(target) {
+  return Boolean(target.closest("a, button, input, textarea, select, dialog, .mission-dialog"));
+}
+
+function setAdjacentView(direction) {
+  const activeView = document.querySelector(".view.is-active")?.id || getInitialView();
+  const activeIndex = Math.max(0, VIEW_ORDER.indexOf(activeView));
+  const nextIndex = (activeIndex + direction + VIEW_ORDER.length) % VIEW_ORDER.length;
+  setView(VIEW_ORDER[nextIndex]);
+}
+
+function setRefreshState(isRefreshing) {
+  els.refreshButton.classList.toggle("is-refreshing", isRefreshing);
+  els.refreshButton.toggleAttribute("aria-busy", isRefreshing);
+}
+
 async function loadData({ force = false } = {}) {
+  setRefreshState(true);
   setSourceState("loading");
   try {
-    const [upcomingPayload, previousPayload] = await Promise.all([
-      fetchJson(addCacheBust(UPCOMING_URL, force)),
-      fetchJson(addCacheBust(PREVIOUS_URL, force)),
-    ]);
+    try {
+      const [upcomingPayload, previousPayload] = await Promise.all([
+        fetchJson(addCacheBust(UPCOMING_URL, force)),
+        fetchJson(addCacheBust(PREVIOUS_URL, force)),
+      ]);
 
-    state.upcoming = cleanLaunches(upcomingPayload.results || []);
-    state.previous = cleanLaunches(previousPayload.results || []);
-    state.source = "live";
-    state.lastUpdated = new Date().toISOString();
-    writeCachedData();
-  } catch (error) {
-    const cached = readCachedData();
-    if (cached) {
-      state.upcoming = cached.upcoming;
-      state.previous = cached.previous;
-      state.lastUpdated = cached.lastUpdated;
-      state.source = "cached";
-    } else {
-      const sample = buildSampleData();
-      state.upcoming = sample.upcoming;
-      state.previous = sample.previous;
-      state.lastUpdated = sample.lastUpdated;
-      state.source = "sample";
+      state.upcoming = cleanLaunches(upcomingPayload.results || []);
+      state.previous = cleanLaunches(previousPayload.results || []);
+      state.source = "live";
+      state.lastUpdated = new Date().toISOString();
+      writeCachedData();
+    } catch (error) {
+      const cached = readCachedData();
+      if (cached) {
+        state.upcoming = cached.upcoming;
+        state.previous = cached.previous;
+        state.lastUpdated = cached.lastUpdated;
+        state.source = "cached";
+      } else {
+        const sample = buildSampleData();
+        state.upcoming = sample.upcoming;
+        state.previous = sample.previous;
+        state.lastUpdated = sample.lastUpdated;
+        state.source = "sample";
+      }
     }
-  }
 
-  state.launches = mergeLaunches(state.upcoming, state.previous);
-  state.stats = deriveStats();
-  renderAll();
+    state.launches = mergeLaunches(state.upcoming, state.previous);
+    state.stats = deriveStats();
+    renderAll();
+  } finally {
+    setRefreshState(false);
+  }
 }
 
 function primeInitialData() {
@@ -427,10 +515,12 @@ function renderNextMission() {
 function renderCountdown() {
   const next = getNextLaunch();
   if (!next) {
+    setLaunchUrgency(null);
     setCountdown(["--", "--", "--", "--"]);
     return;
   }
   const diff = new Date(next.net).getTime() - Date.now();
+  setLaunchUrgency(diff);
   if (diff <= 0) {
     setCountdown(["00", "00", "00", "00"]);
     return;
@@ -445,9 +535,22 @@ function renderCountdown() {
 
 function setCountdown(parts) {
   const labels = ["DAYS", "HRS", "MIN", "SEC"];
-  els.countdown.innerHTML = parts
-    .map((part, index) => `<span><strong>${escapeHtml(part)}</strong><small>${labels[index]}</small></span>`)
-    .join("");
+  if (els.countdown.children.length !== labels.length) {
+    els.countdown.innerHTML = labels.map((label) => `<span><strong>--</strong><small>${label}</small></span>`).join("");
+  }
+
+  Array.from(els.countdown.children).forEach((cell, index) => {
+    cell.querySelector("strong").textContent = parts[index];
+    cell.querySelector("small").textContent = labels[index];
+  });
+}
+
+function setLaunchUrgency(diff) {
+  const isCounting = typeof diff === "number" && diff > 0;
+  const isLaunchDay = isCounting && diff <= 86400000;
+  const isFinalHour = isCounting && diff <= 3600000;
+  els.nextMissionCard.classList.toggle("is-launch-day", isLaunchDay);
+  els.nextMissionCard.classList.toggle("is-final-hour", isFinalHour);
 }
 
 function renderSignals() {
