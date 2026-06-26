@@ -309,15 +309,22 @@ body::before {
 }
 
 .icon-button {
-  width: 2.3rem;
   height: 2.3rem;
-  display: grid;
-  place-items: center;
+  padding: 0 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: rgba(101, 216, 255, 0.05);
   color: var(--cyan);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .icon-button:hover {
@@ -330,6 +337,72 @@ body::before {
 .icon-button svg {
   width: 1.15rem;
   height: 1.15rem;
+  flex-shrink: 0;
+}
+
+/* Refresh Animation Styles */
+.icon-button.is-refreshing svg {
+  animation: refreshSpin 1s linear infinite;
+}
+
+.icon-button.is-refreshing .refresh-rocket {
+  animation: refreshFlight 1.15s ease-in-out infinite;
+}
+
+.refresh-rocket {
+  position: absolute;
+  right: 0.28rem;
+  bottom: 0.28rem;
+  width: 1.75rem;
+  height: 0.7rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-0.35rem) translateY(0.1rem);
+}
+
+.refresh-rocket::before,
+.refresh-rocket::after {
+  position: absolute;
+  top: 50%;
+  content: "";
+  transform: translateY(-50%);
+}
+
+.refresh-rocket::before {
+  right: 0;
+  width: 0.78rem;
+  height: 0.34rem;
+  border-radius: 999px 999px 999px 2px;
+  background: var(--text);
+  box-shadow: 0 0 12px rgba(101, 216, 255, 0.32);
+}
+
+.refresh-rocket::after {
+  left: 0;
+  width: 0.95rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--amber), var(--cyan));
+}
+
+@keyframes refreshSpin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes refreshFlight {
+  0% {
+    opacity: 0;
+    transform: translateX(-0.7rem) translateY(0.16rem);
+  }
+  28%,
+  74% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(0.45rem) translateY(-0.22rem);
+  }
 }
 
 .install-button {
@@ -1648,6 +1721,16 @@ dd {
     flex-direction: column;
     gap: 0.5rem;
     height: auto;
+  }
+  
+  .icon-button .btn-label {
+    display: none;
+  }
+  
+  .icon-button {
+    padding: 0;
+    width: 2.3rem;
+    justify-content: center;
   }
   
   .hud-header-left, .hud-header-right {
