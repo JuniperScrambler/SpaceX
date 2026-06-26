@@ -7,7 +7,7 @@ const FAVORITES_KEY = "spacex-tracker-favorites";
 const TZ_KEY = "spacex-tracker-timezone";
 const VIEW_ORDER = ["home", "launches", "stats", "fleet"];
 const SWIPE_THRESHOLD = 58;
-const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTH_LABELS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
 
 const state = {
   upcoming: [],
@@ -456,10 +456,10 @@ function renderAll() {
 
 function renderSource() {
   const labels = {
-    loading: "Preparing feed",
-    live: "Live Launch Library feed",
-    cached: "Cached launch feed",
-    sample: "Offline sample feed",
+    loading: "データ取得中",
+    live: "Launch Libraryから取得済み",
+    cached: "保存済みデータを表示中",
+    sample: "サンプルデータを表示中",
   };
   els.sourceLabel.textContent = labels[state.source] || labels.sample;
   els.statusDot.className = "status-dot";
@@ -475,10 +475,10 @@ function setSourceState(source) {
 
 function renderHeroMetrics() {
   const metrics = [
-    ["Total launches", formatNumber(state.stats.totalLaunches), "累計打ち上げ回数"],
-    ["This year", formatNumber(state.stats.yearLaunches), `${state.stats.monthlyAverage.toFixed(1)} / month pace`],
-    ["Pending", formatNumber(state.stats.pendingLaunches), "予定ミッション"],
-    ["Success rate", formatPercent(state.stats.successRate), `${formatNumber(state.stats.consecutiveSuccesses)} consecutive`],
+    ["累計打ち上げ", formatNumber(state.stats.totalLaunches), "SpaceXの累計実績"],
+    ["今年の打ち上げ", formatNumber(state.stats.yearLaunches), `月平均 ${state.stats.monthlyAverage.toFixed(1)} 回ペース`],
+    ["予定ミッション", formatNumber(state.stats.pendingLaunches), "今後の登録済み打ち上げ"],
+    ["成功率", formatPercent(state.stats.successRate), `${formatNumber(state.stats.consecutiveSuccesses)}回連続成功`],
   ];
 
   els.heroMetrics.innerHTML = metrics
@@ -534,7 +534,7 @@ function renderCountdown() {
 }
 
 function setCountdown(parts) {
-  const labels = ["DAYS", "HRS", "MIN", "SEC"];
+  const labels = ["日", "時間", "分", "秒"];
   if (els.countdown.children.length !== labels.length) {
     els.countdown.innerHTML = labels.map((label) => `<span><strong>--</strong><small>${label}</small></span>`).join("");
   }
@@ -569,7 +569,7 @@ function renderSignals() {
       return `
         <article class="signal-card">
           <div class="signal-track">
-            <span>${future ? "Upcoming" : "Recent"}</span>
+            <span>${future ? "予定" : "実績"}</span>
             <span>${escapeHtml(statusName(launch))}</span>
           </div>
           <h3>${escapeHtml(shortLaunchName(launch.name))}</h3>
@@ -611,7 +611,7 @@ function renderLaunchList() {
             <button class="favorite-button ${active ? "is-active" : ""}" type="button" aria-label="お気に入り" data-favorite="${escapeAttribute(launch.id)}">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.8 2.5 5.1 5.6.8-4 3.9.9 5.5-5-2.6-5 2.6.9-5.5-4-3.9 5.6-.8z" /></svg>
             </button>
-            <button class="ghost-button" type="button" data-detail="${escapeAttribute(launch.id)}">Details</button>
+            <button class="ghost-button" type="button" data-detail="${escapeAttribute(launch.id)}">詳細</button>
           </div>
         </article>
       `;
@@ -653,10 +653,10 @@ function filteredLaunches() {
 
 function renderStats() {
   const statCards = [
-    ["累計打ち上げ", formatNumber(state.stats.totalLaunches), "Launch Library agency total"],
-    ["今年の打ち上げ", formatNumber(state.stats.yearLaunches), `${new Date().getFullYear()} completed`],
-    ["今月", formatNumber(state.stats.monthLaunches), "completed launches"],
-    ["着陸成功率", formatPercent(state.stats.landingRate), `${formatNumber(state.stats.consecutiveLandings)} consecutive landings`],
+    ["累計打ち上げ", formatNumber(state.stats.totalLaunches), "Launch LibraryのSpaceX集計"],
+    ["今年の打ち上げ", formatNumber(state.stats.yearLaunches), `${new Date().getFullYear()}年の完了数`],
+    ["今月", formatNumber(state.stats.monthLaunches), "今月の完了済み打ち上げ"],
+    ["着陸成功率", formatPercent(state.stats.landingRate), `${formatNumber(state.stats.consecutiveLandings)}回連続着陸成功`],
   ];
 
   els.statGrid.innerHTML = statCards
@@ -692,7 +692,7 @@ function renderMonthlyChart() {
   const max = Math.max(1, ...counts.map((item) => item.actual + item.planned));
   const totalActual = counts.reduce((sum, item) => sum + item.actual, 0);
   const totalPlanned = counts.reduce((sum, item) => sum + item.planned, 0);
-  els.monthlyTotal.textContent = `${totalActual} done / ${totalPlanned} planned`;
+  els.monthlyTotal.textContent = `${totalActual}回完了 / ${totalPlanned}回予定`;
   els.monthlyChart.innerHTML = counts
     .map((item, index) => {
       const total = item.actual + item.planned;
@@ -743,7 +743,7 @@ function renderPadGrid() {
       (pad) => `
         <article class="pad-item">
           <strong>${escapeHtml(compactName(pad.name))}</strong>
-          <span>${pad.count} launches in loaded window</span>
+          <span>取得範囲で${pad.count}回</span>
           <span>${escapeHtml(pad.last?.pad?.location?.name || "")}</span>
         </article>
       `,
@@ -753,9 +753,9 @@ function renderPadGrid() {
 
 function renderFleet() {
   const overviewCards = [
-    ["Launch success", formatPercent(state.stats.successRate), `${formatNumber(state.stats.successfulLaunches)} successful launches`],
-    ["Landing success", formatPercent(state.stats.landingRate), "booster and spacecraft landings"],
-    ["Pending manifest", formatNumber(state.stats.pendingLaunches), "future SpaceX launches"],
+    ["打ち上げ成功率", formatPercent(state.stats.successRate), `${formatNumber(state.stats.successfulLaunches)}回の成功実績`],
+    ["着陸成功率", formatPercent(state.stats.landingRate), "ブースター/宇宙船の着陸実績"],
+    ["予定ミッション", formatNumber(state.stats.pendingLaunches), "今後のSpaceX打ち上げ"],
   ];
 
   els.fleetOverview.innerHTML = overviewCards
@@ -785,11 +785,11 @@ function renderFleet() {
     .map(
       (row) => `
         <article class="fleet-card">
-          <div class="fleet-meta">${row.launches.length} loaded launches</div>
+          <div class="fleet-meta">取得範囲 ${row.launches.length}件</div>
           <h3>${escapeHtml(row.name)}</h3>
-          <p class="metric-foot">Latest: ${escapeHtml(shortLaunchName(row.latest?.name || "--"))}</p>
+          <p class="metric-foot">最新: ${escapeHtml(shortLaunchName(row.latest?.name || "--"))}</p>
           <p class="metric-foot">${escapeHtml(formatDate(row.latest?.net))}</p>
-          <div class="fleet-meter" aria-label="Success share"><span style="width: ${Math.max(5, row.rate * 100)}%"></span></div>
+          <div class="fleet-meter" aria-label="成功割合"><span style="width: ${Math.max(5, row.rate * 100)}%"></span></div>
         </article>
       `,
     )
@@ -797,7 +797,7 @@ function renderFleet() {
 }
 
 function renderTimestamps() {
-  const label = state.lastUpdated ? `Updated ${formatDate(state.lastUpdated)}` : "--";
+  const label = state.lastUpdated ? `更新 ${formatDate(state.lastUpdated)}` : "--";
   els.dataTimestamp.textContent = label;
   els.fleetTimestamp.textContent = label;
 }
@@ -834,19 +834,30 @@ function showMissionDetail(id) {
   if (!launch) return;
   const image = imageUrl(launch) || "assets/launch-hero.png";
   const infoLinks = [...(launch.info_urls || []), ...(launch.vid_urls || [])];
+  const originalDescription = launch.mission?.description;
   els.dialogContent.innerHTML = `
     <div class="dialog-hero" style="--dialog-image: url('${escapeAttribute(image)}')"></div>
     <div class="dialog-body">
       <span class="pill ${statusClass(launch)}">${escapeHtml(statusName(launch))}</span>
       <h2>${escapeHtml(shortLaunchName(launch.name))}</h2>
       <div class="dialog-meta">${escapeHtml(formatDate(launch.net))}</div>
-      <p>${escapeHtml(launch.mission?.description || "ミッション概要はまだ登録されていません。")}</p>
+      <p class="dialog-summary">${escapeHtml(japaneseMissionSummary(launch))}</p>
       <div class="dialog-grid">
-        <div><dt>Rocket</dt><dd>${escapeHtml(rocketName(launch))}</dd></div>
-        <div><dt>Orbit</dt><dd>${escapeHtml(orbitName(launch))}</dd></div>
-        <div><dt>Pad</dt><dd>${escapeHtml(padName(launch))}</dd></div>
-        <div><dt>Provider</dt><dd>${escapeHtml(providerName(launch))}</dd></div>
+        <div><dt>ロケット</dt><dd>${escapeHtml(rocketName(launch))}</dd></div>
+        <div><dt>軌道</dt><dd>${escapeHtml(orbitName(launch))}</dd></div>
+        <div><dt>射場</dt><dd>${escapeHtml(padName(launch))}</dd></div>
+        <div><dt>状態</dt><dd>${escapeHtml(statusName(launch))}</dd></div>
+        <div><dt>ミッション分類</dt><dd>${escapeHtml(missionTypeName(launch))}</dd></div>
+        <div><dt>事業者</dt><dd>${escapeHtml(providerName(launch))}</dd></div>
       </div>
+      ${
+        originalDescription
+          ? `<details class="dialog-original">
+              <summary>英語の原文を表示</summary>
+              <p>${escapeHtml(originalDescription)}</p>
+            </details>`
+          : `<p class="dialog-note">Launch Libraryには、詳しい英語説明がまだ登録されていません。</p>`
+      }
       ${
         infoLinks.length
           ? `<p><a href="${escapeAttribute(infoLinks[0].url)}" target="_blank" rel="noreferrer">関連リンクを開く</a></p>`
@@ -855,6 +866,32 @@ function showMissionDetail(id) {
     </div>
   `;
   els.dialog.showModal();
+}
+
+function japaneseMissionSummary(launch) {
+  const future = new Date(launch.net) > new Date();
+  const timing = future ? "予定されています" : isSuccess(launch) ? "実施されました" : "記録されています";
+  const purpose = missionPurposeText(launch);
+  const parts = [
+    purpose,
+    `使用ロケットは${rocketName(launch)}、ミッション分類は${missionTypeName(launch)}です。`,
+    `目標軌道は${orbitName(launch)}、射場は${padName(launch)}です。`,
+    `打ち上げ時刻は${formatDate(launch.net)}で、現在の状態は「${statusName(launch)}」として${timing}。`,
+  ];
+  return parts.join(" ");
+}
+
+function missionPurposeText(launch) {
+  const text = launchText(launch);
+  if (text.includes("starlink")) return "Starlink衛星群を軌道へ投入するSpaceXのミッションです。";
+  if (text.includes("cargo dragon") || text.includes("resupply")) return "Dragon宇宙船による補給・輸送に関わるミッションです。";
+  if (text.includes("crew dragon") || text.includes("crew-")) return "Crew Dragonによる有人宇宙飛行ミッションです。";
+  if (text.includes("starship") || text.includes("flight test")) return "Starshipの飛行試験、またはStarship関連のミッションです。";
+  if (text.includes("transporter") || text.includes("rideshare")) return "複数の小型衛星をまとめて運ぶライドシェアミッションです。";
+  if (text.includes("sxm") || text.includes("sirius") || text.includes("communications")) return "通信衛星を軌道へ投入するミッションです。";
+  if (text.includes("national security") || text.includes("government")) return "政府・安全保障分野に関わるミッションです。";
+  if (text.includes("commercial")) return "商業衛星や顧客ペイロードを運ぶミッションです。";
+  return "SpaceXによる打ち上げミッションです。";
 }
 
 function buildSampleData() {
@@ -921,6 +958,7 @@ function launchText(launch) {
     rocketName(launch),
     padName(launch),
     orbitName(launch),
+    rawStatusName(launch),
     statusName(launch),
     launch.mission?.type,
   ]
@@ -934,7 +972,11 @@ function shortLaunchName(name = "") {
 }
 
 function compactName(name = "") {
-  return name.replace("Space Launch Complex", "SLC").replace("Launch Complex", "LC").replace("Falcon 9 Block 5", "Falcon 9");
+  return name
+    .replace("Space Launch Complex", "SLC")
+    .replace("Launch Complex", "LC")
+    .replace("Falcon 9 Block 5", "Falcon 9")
+    .replace("Orbital Launch Mount", "軌道発射マウント");
 }
 
 function providerName(launch) {
@@ -942,23 +984,78 @@ function providerName(launch) {
 }
 
 function rocketName(launch) {
-  return launch.rocket?.configuration?.full_name || launch.rocket?.configuration?.name || "Unknown rocket";
+  return launch.rocket?.configuration?.full_name || launch.rocket?.configuration?.name || "ロケット未定";
 }
 
 function padName(launch) {
-  return launch.pad?.name || launch.pad?.location?.name || "Pad TBD";
+  return compactName(launch.pad?.name || launch.pad?.location?.name || "射場未定");
 }
 
 function orbitName(launch) {
-  return launch.mission?.orbit?.abbrev || launch.mission?.orbit?.name || launch.mission?.type || "Orbit TBD";
+  const abbrev = launch.mission?.orbit?.abbrev;
+  const name = launch.mission?.orbit?.name;
+  const key = String(abbrev || name || "").toLowerCase();
+  const orbitLabels = {
+    leo: "地球低軌道",
+    meo: "中軌道",
+    geo: "静止軌道",
+    gto: "静止トランスファ軌道",
+    sso: "太陽同期軌道",
+    iss: "国際宇宙ステーション",
+    heo: "高楕円軌道",
+    po: "極軌道",
+    polar: "極軌道",
+    lunar: "月遷移軌道",
+    suborbital: "サブオービタル",
+  };
+  if (orbitLabels[key]) return orbitLabels[key];
+  if (key.includes("low earth")) return "地球低軌道";
+  if (key.includes("geostationary transfer")) return "静止トランスファ軌道";
+  if (key.includes("sun-synchronous")) return "太陽同期軌道";
+  if (key.includes("polar")) return "極軌道";
+  return missionTypeName(launch) || "軌道未定";
 }
 
 function statusName(launch) {
+  return statusLabel(rawStatusName(launch));
+}
+
+function rawStatusName(launch) {
   return launch.status?.abbrev || launch.status?.name || "TBD";
 }
 
+function statusLabel(value) {
+  const text = String(value || "TBD").toLowerCase();
+  if (text.includes("success")) return "成功";
+  if (text === "go" || text.includes("go for launch")) return "実施可";
+  if (text.includes("failure") || text.includes("fail")) return "失敗";
+  if (text.includes("partial")) return "一部成功";
+  if (text.includes("hold")) return "保留中";
+  if (text.includes("scrub")) return "延期";
+  if (text.includes("tbc") || text.includes("confirm")) return "確認中";
+  if (text.includes("tbd") || text.includes("determin")) return "未定";
+  if (text.includes("planned")) return "計画中";
+  return value || "未定";
+}
+
+function missionTypeName(launch) {
+  const raw = launch.mission?.type || "";
+  const text = `${raw} ${launch.name || ""}`.toLowerCase();
+  if (text.includes("communications")) return "通信衛星";
+  if (text.includes("resupply") || text.includes("cargo")) return "補給・輸送";
+  if (text.includes("test flight") || text.includes("flight test")) return "飛行試験";
+  if (text.includes("government")) return "政府系";
+  if (text.includes("earth science")) return "地球観測";
+  if (text.includes("navigation")) return "測位衛星";
+  if (text.includes("human") || text.includes("crew")) return "有人飛行";
+  if (text.includes("rideshare") || text.includes("transporter")) return "ライドシェア";
+  if (text.includes("starlink")) return "Starlink衛星";
+  if (text.includes("commercial")) return "商業ミッション";
+  return raw || "分類未定";
+}
+
 function statusClass(launch) {
-  const text = statusName(launch).toLowerCase();
+  const text = rawStatusName(launch).toLowerCase();
   if (text.includes("success")) return "success";
   if (text.includes("go")) return "go";
   if (text.includes("fail")) return "failure";
@@ -966,11 +1063,11 @@ function statusClass(launch) {
 }
 
 function isSuccess(launch) {
-  return statusName(launch).toLowerCase().includes("success");
+  return rawStatusName(launch).toLowerCase().includes("success");
 }
 
 function isFailure(launch) {
-  return statusName(launch).toLowerCase().includes("fail");
+  return rawStatusName(launch).toLowerCase().includes("fail");
 }
 
 function imageUrl(launch) {

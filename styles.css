@@ -1305,6 +1305,18 @@ dd {
   line-height: 1.65;
 }
 
+.dialog-summary {
+  margin: 0.9rem 0 0;
+  padding: 0.85rem;
+  border: 1px solid rgba(101, 216, 255, 0.28);
+  border-radius: 6px;
+  background: rgba(101, 216, 255, 0.07);
+}
+
+.dialog-note {
+  margin-bottom: 0;
+}
+
 .dialog-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1317,6 +1329,29 @@ dd {
   border: 1px solid var(--line);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.04);
+}
+
+.dialog-original {
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dialog-original summary {
+  min-height: 2.55rem;
+  padding: 0.72rem 0.85rem;
+  color: var(--soft);
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.dialog-original p {
+  margin: 0;
+  padding: 0 0.85rem 0.85rem;
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 @keyframes starDrift {
