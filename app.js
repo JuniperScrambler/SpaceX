@@ -258,18 +258,20 @@ async function loadData({ force = false } = {}) {
       state.lastUpdated = new Date().toISOString();
       writeCachedData();
     } catch (error) {
+      console.error("SpaceX Tracker load failed:", error);
+      const isRateLimit = error.message && error.message.includes("429");
       const cached = readCachedData();
       if (cached) {
         state.upcoming = cached.upcoming;
         state.previous = cached.previous;
         state.lastUpdated = cached.lastUpdated;
-        state.source = "cached";
+        state.source = isRateLimit ? "rate-limited-cache" : "cached";
       } else {
         const sample = buildSampleData();
         state.upcoming = sample.upcoming;
         state.previous = sample.previous;
         state.lastUpdated = sample.lastUpdated;
-        state.source = "sample";
+        state.source = isRateLimit ? "rate-limited-sample" : "sample";
       }
     }
 
@@ -473,12 +475,14 @@ function renderSource() {
     live: "Launch Libraryから取得済み",
     cached: "保存済みデータを表示中",
     sample: "サンプルデータを表示中",
+    "rate-limited-cache": "API制限中 (キャッシュ表示)",
+    "rate-limited-sample": "API制限中 (サンプル表示)",
   };
   els.sourceLabel.textContent = labels[state.source] || labels.sample;
   els.statusDot.className = "status-dot";
   if (state.source === "live") els.statusDot.classList.add("live");
-  if (state.source === "cached") els.statusDot.classList.add("cached");
-  if (state.source === "sample") els.statusDot.classList.add("offline");
+  if (state.source === "cached" || state.source === "rate-limited-cache") els.statusDot.classList.add("cached");
+  if (state.source === "sample" || state.source === "rate-limited-sample") els.statusDot.classList.add("offline");
 }
 
 function setSourceState(source) {
