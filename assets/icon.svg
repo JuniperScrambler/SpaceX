@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">SpaceX Tracker app icon</title>
+  <defs>
+    <linearGradient id="bg" x1="64" y1="32" x2="448" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#121722"/>
+      <stop offset="0.55" stop-color="#06080d"/>
+      <stop offset="1" stop-color="#0d1e28"/>
+    </linearGradient>
+    <linearGradient id="rocket" x1="184" y1="72" x2="344" y2="432" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.58" stop-color="#cfd7df"/>
+      <stop offset="1" stop-color="#737f8b"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <path d="M82 348c65-79 159-119 282-120 30 0 55 3 75 8" fill="none" stroke="#65d8ff" stroke-width="18" stroke-linecap="round" opacity=".9"/>
+  <path d="M398 154c25 19 41 49 45 89" fill="none" stroke="#ffbd66" stroke-width="14" stroke-linecap="round"/>
+  <path d="M256 60c61 50 83 122 67 216l42 57-8 68-75-36a159 159 0 0 1-52 0l-75 36-8-68 42-57C173 182 195 110 256 60z" fill="url(#rocket)" stroke="#ffffff" stroke-width="10" stroke-linejoin="round"/>
+  <path d="M232 187h48" stroke="#071019" stroke-width="18" stroke-linecap="round"/>
+  <path d="M236 422h40" stroke="#65d8ff" stroke-width="18" stroke-linecap="round"/>
+</svg>

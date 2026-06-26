@@ -1,0 +1,19 @@
+{
+  "name": "SpaceX Tracker",
+  "short_name": "SX Tracker",
+  "description": "SpaceXの打ち上げ予定、頻度、累計実績を確認できるPWAダッシュボード。",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#05070b",
+  "theme_color": "#05070b",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
