@@ -221,6 +221,19 @@ function setAdjacentView(direction) {
   const activeView = document.querySelector(".view.is-active")?.id || getInitialView();
   const activeIndex = Math.max(0, VIEW_ORDER.indexOf(activeView));
   const nextIndex = (activeIndex + direction + VIEW_ORDER.length) % VIEW_ORDER.length;
+  
+  // スワイプ方向（前進/後退）を検出して main 要素にクラスを付与
+  const mainEl = document.querySelector("main");
+  if (mainEl) {
+    mainEl.classList.remove("swipe-left", "swipe-right");
+    // direction > 0 は左スワイプ（次のビュー、右から入る）
+    if (direction > 0) {
+      mainEl.classList.add("swipe-left");
+    } else {
+      mainEl.classList.add("swipe-right");
+    }
+  }
+
   setView(VIEW_ORDER[nextIndex]);
 }
 
@@ -1113,6 +1126,23 @@ function escapeAttribute(value) {
 }
 
 function registerServiceWorker() {
+  // ローカル開発環境（localhost）ではキャッシュの衝突を防ぐため、Service Workerを解除する
+  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) {
+          registration.unregister().then((success) => {
+            if (success) {
+              console.log("Service Worker unregistered for localhost development.");
+              window.location.reload(); // キャッシュクリア後に自動リロードして最新版を適用
+            }
+          });
+        }
+      });
+    }
+    return;
+  }
+
   if (!("serviceWorker" in navigator)) return;
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).catch(() => {});

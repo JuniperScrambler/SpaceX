@@ -12,57 +12,77 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="assets/icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;950&family=Outfit:wght@300;400;500;700;850&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
     <script defer src="app.js"></script>
   </head>
   <body>
     <div class="app-shell">
-      <header class="topbar">
+      <!-- HUD Left Sidebar -->
+      <aside class="sidebar">
         <a class="brand" href="#home" aria-label="SpaceX Tracker">
           <img src="assets/icon.svg" alt="" class="brand-mark" />
-          <span>
-            <span class="brand-name">SpaceX Tracker</span>
-            <span class="brand-sub">打ち上げ管制ダッシュボード</span>
+          <span class="brand-text">
+            <span class="brand-name">SPACEX // HUD</span>
+            <span class="brand-sub">CONTROL CENTER</span>
           </span>
         </a>
-
+        
         <nav class="nav-tabs desktop-nav" aria-label="メインビュー">
-          <button class="nav-tab is-active" type="button" data-view="home">
+          <button class="nav-tab is-active" type="button" data-view="home" aria-label="管制室">
             <span class="tab-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M4 14.4 12 5l8 9.4v4.1a1.5 1.5 0 0 1-1.5 1.5H15v-5H9v5H5.5A1.5 1.5 0 0 1 4 18.5z" /></svg>
             </span>
-            管制
+            <span class="tab-label">管制室</span>
           </button>
-          <button class="nav-tab" type="button" data-view="launches">
+          <button class="nav-tab" type="button" data-view="launches" aria-label="予定・実績">
             <span class="tab-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M12 3c2.8 2 4.2 5.1 4.1 9.3l3.2 3.2v3.3l-4.4-1.5a9 9 0 0 1-5.8 0l-4.4 1.5v-3.3l3.2-3.2C7.8 8.1 9.2 5 12 3zM11 19h2v2h-2z" /></svg>
             </span>
-            打ち上げ
+            <span class="tab-label">予定・実績</span>
           </button>
-          <button class="nav-tab" type="button" data-view="stats">
+          <button class="nav-tab" type="button" data-view="stats" aria-label="統計データ">
             <span class="tab-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M5 19V9h3v10zm5 0V5h3v14zm5 0v-7h3v7z" /></svg>
             </span>
-            統計
+            <span class="tab-label">統計分析</span>
           </button>
-          <button class="nav-tab" type="button" data-view="fleet">
+          <button class="nav-tab" type="button" data-view="fleet" aria-label="機体フリート">
             <span class="tab-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M6 18.5V7.2L12 3l6 4.2v11.3l-6 2.5zm3-8h6V8.3L12 6.2 9 8.3z" /></svg>
             </span>
-            機体
+            <span class="tab-label">機体情報</span>
           </button>
           <span class="nav-flight" aria-hidden="true"></span>
         </nav>
+      </aside>
 
-        <div class="top-actions">
-          <button class="icon-button" id="refreshButton" type="button" aria-label="最新データを取得">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.6 6.4A7.8 7.8 0 0 0 4.4 11H2l3.7 3.7L9.4 11H7a5.3 5.3 0 0 1 9-3.8l1.6-1.6zM6.4 17.6A7.8 7.8 0 0 0 19.6 13H22l-3.7-3.7L14.6 13H17a5.3 5.3 0 0 1-9 3.8z" /></svg>
-            <span class="refresh-rocket" aria-hidden="true"></span>
-          </button>
-          <button class="install-button" id="installButton" type="button" hidden>インストール</button>
+      <!-- HUD Top Header -->
+      <header class="hud-header">
+        <div class="hud-header-left">
+          <span class="hud-terminal-title">CONSOLE // TERMINAL ACTIVE</span>
+          <span class="hud-status-pill green">POWER: INT</span>
+          <span class="hud-status-pill cyan">SECURE // SSL</span>
+        </div>
+        
+        <div class="hud-header-center">
+          <span class="hud-title-main">SPACEX TRACKER // MISSION CONTROL</span>
+        </div>
+
+        <div class="hud-header-right">
+          <div class="top-actions">
+            <button class="icon-button" id="refreshButton" type="button" aria-label="最新データを取得">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.6 6.4A7.8 7.8 0 0 0 4.4 11H2l3.7 3.7L9.4 11H7a5.3 5.3 0 0 1 9-3.8l1.6-1.6zM6.4 17.6A7.8 7.8 0 0 0 19.6 13H22l-3.7-3.7L14.6 13H17a5.3 5.3 0 0 1-9 3.8z" /></svg>
+              <span class="refresh-rocket" aria-hidden="true"></span>
+            </button>
+            <button class="install-button" id="installButton" type="button" hidden>INSTALL PWA</button>
+          </div>
         </div>
       </header>
 
+      <!-- HUD Mobile Bottom Navigation -->
       <nav class="nav-tabs mobile-nav" aria-label="メインビュー（モバイル）">
         <button class="nav-tab is-active" type="button" data-view="home">
           <span class="tab-icon" aria-hidden="true">
@@ -91,136 +111,251 @@
         <span class="nav-flight" aria-hidden="true"></span>
       </nav>
 
+      <!-- Main Contents -->
       <main>
+        <!-- Home View -->
         <section class="view is-active" id="home" aria-labelledby="homeTitle">
-          <section class="hero">
-            <div class="hero-bg" aria-hidden="true"></div>
-            <div class="hero-content">
-              <div class="mission-panel">
-                <p class="eyebrow">管制室</p>
-                <h1 id="homeTitle">SpaceX Tracker</h1>
-                <p class="hero-copy">次の打ち上げ、今年のペース、累計実績をひと目で。</p>
-
-                <article class="next-card" id="nextMissionCard">
-                  <div class="mobile-visual-card hero-visual" aria-hidden="true">
-                    <img src="assets/launch-hero.png" alt="" />
-                    <span class="launch-animation">
-                      <span class="rocket-silhouette"></span>
-                      <span class="rocket-flame"></span>
-                      <span class="launch-smoke"></span>
-                    </span>
-                  </div>
-                  <div class="section-kicker">次の打ち上げ</div>
-                  <h2 id="nextMissionName">データ取得中</h2>
-                  <div class="countdown" id="countdown">
-                    <span><strong>--</strong><small>日</small></span>
-                    <span><strong>--</strong><small>時間</small></span>
-                    <span><strong>--</strong><small>分</small></span>
-                    <span><strong>--</strong><small>秒</small></span>
-                  </div>
-                  <dl class="mission-meta">
-                    <div>
-                      <dt>予定時刻</dt>
-                      <dd id="nextMissionTime">--</dd>
-                    </div>
-                    <div>
-                      <dt>射場</dt>
-                      <dd id="nextMissionPad">--</dd>
-                    </div>
-                    <div>
-                      <dt>状態</dt>
-                      <dd id="nextMissionStatus">--</dd>
-                    </div>
-                  </dl>
-                </article>
-              </div>
-
-              <aside class="telemetry-panel" aria-label="SpaceX telemetry">
-                <div class="source-line">
-                  <span class="status-dot" id="statusDot"></span>
-                  <span id="sourceLabel">データ取得準備中</span>
+          <div class="hud-main-grid">
+            
+            <!-- T-MINUS Countdown Panel -->
+            <article class="next-card t-minus-hud" id="nextMissionCard">
+              <div class="hud-panel-bracket"></div>
+              <div class="section-kicker">// T-MINUS TO LAUNCH</div>
+              <div class="hud-t-minus-wrapper">
+                <h2 id="nextMissionName">LOADING MISSION...</h2>
+                <div class="countdown" id="countdown">
+                  <span><strong>--</strong><small>DAYS</small></span>
+                  <span><strong>--</strong><small>HOURS</small></span>
+                  <span><strong>--</strong><small>MINS</small></span>
+                  <span><strong>--</strong><small>SECS</small></span>
                 </div>
-                <div class="telemetry-grid" id="heroMetrics"></div>
-                <div class="timezone-control" aria-label="タイムゾーン">
-                  <button class="time-option is-active" type="button" data-zone="local">現在地</button>
-                  <button class="time-option" type="button" data-zone="jst">日本</button>
-                  <button class="time-option" type="button" data-zone="utc">UTC</button>
-                </div>
-              </aside>
-            </div>
-          </section>
-
-          <section class="content-band">
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">最近の状況</p>
-                <h2>打ち上げの流れ</h2>
               </div>
-              <button class="text-button" type="button" data-view-jump="launches">一覧を見る</button>
-            </div>
-            <div class="signal-grid" id="signalGrid"></div>
-          </section>
+              
+              <dl class="mission-meta">
+                <div>
+                  <dt>NET SCHEDULED TIME</dt>
+                  <dd id="nextMissionTime">--</dd>
+                </div>
+                <div>
+                  <dt>LAUNCH COMPLEX</dt>
+                  <dd id="nextMissionPad">--</dd>
+                </div>
+                <div>
+                  <dt>STATUS READOUT</dt>
+                  <dd id="nextMissionStatus">--</dd>
+                </div>
+              </dl>
+            </article>
+
+            <!-- Telemetry HUD Column 1: Live SVG Charts & G-Force -->
+            <article class="chart-panel telemetry-charts-panel">
+              <div class="hud-panel-bracket"></div>
+              <div class="panel-title">
+                <h3>LAUNCH TELEMETRY</h3>
+                <span>REAL-TIME SCANS</span>
+              </div>
+              <div class="telemetry-hud-content">
+                <!-- Velocity Graphic -->
+                <div class="telemetry-chart-block">
+                  <div class="telemetry-meta">
+                    <span class="chart-label">VELOCITY (SPEED)</span>
+                    <span class="chart-value font-mono text-cyan">26,450 km/h</span>
+                  </div>
+                  <div class="svg-chart-wrap">
+                    <svg viewBox="0 0 300 60" class="svg-telemetry-chart">
+                      <path class="grid-line-h" d="M0 15 H300 M0 30 H300 M0 45 H300" />
+                      <path class="grid-line-v" d="M50 0 V60 M100 0 V60 M150 0 V60 M200 0 V60 M250 0 V60" />
+                      <path class="chart-path velocity-path" d="M0 50 Q 30 48, 60 40 T 120 32 T 180 20 T 240 12 T 300 5" />
+                      <circle class="glowing-node" cx="300" cy="5" r="3.5" />
+                    </svg>
+                  </div>
+                </div>
+                
+                <!-- Altitude Graphic -->
+                <div class="telemetry-chart-block">
+                  <div class="telemetry-meta">
+                    <span class="chart-label">ALTITUDE (HEIGHT)</span>
+                    <span class="chart-value font-mono text-green">342.6 km</span>
+                  </div>
+                  <div class="svg-chart-wrap">
+                    <svg viewBox="0 0 300 60" class="svg-telemetry-chart">
+                      <path class="grid-line-h" d="M0 15 H300 M0 30 H300 M0 45 H300" />
+                      <path class="grid-line-v" d="M50 0 V60 M100 0 V60 M150 0 V60 M200 0 V60 M250 0 V60" />
+                      <path class="chart-path altitude-path" d="M0 55 C 40 54, 80 48, 120 38 C 180 28, 240 12, 300 8" />
+                      <circle class="glowing-node" cx="300" cy="8" r="3.5" />
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- G-Force Gauge -->
+                <div class="gforce-hud-block">
+                  <div class="telemetry-meta">
+                    <span class="chart-label">ACCELERATION</span>
+                  </div>
+                  <div class="gforce-gauge-container">
+                    <svg viewBox="0 0 120 60" class="gforce-svg">
+                      <!-- Semi-circle Gauge -->
+                      <path class="gauge-bg" d="M20 50 A 40 40 0 0 1 100 50" />
+                      <path class="gauge-fill" d="M20 50 A 40 40 0 0 1 85 22" />
+                      <line class="gauge-needle" x1="60" y1="50" x2="85" y2="22" />
+                      <text class="gauge-value" x="60" y="48">2.1 G</text>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <!-- Telemetry HUD Column 2: Orbital Path Visualizer & Rocket Stages -->
+            <article class="chart-panel orbital-visual-panel">
+              <div class="hud-panel-bracket"></div>
+              <div class="panel-title">
+                <h3>MARS ORBITAL DATA</h3>
+                <span>FLIGHT PATH ANALYSIS</span>
+              </div>
+              <div class="orbital-hud-content">
+                
+                <!-- Rotating SVG Orbit simulator -->
+                <div class="orbit-visual-wrap">
+                  <svg viewBox="0 0 200 200" class="orbit-svg">
+                    <defs>
+                      <radialGradient id="planet-gradient" cx="40%" cy="40%" r="50%">
+                        <stop offset="0%" stop-color="#ff7a7a" />
+                        <stop offset="60%" stop-color="#991b1b" />
+                        <stop offset="100%" stop-color="#450a0a" />
+                      </radialGradient>
+                      <filter id="glow-effect">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                          <feMergeNode in="coloredBlur"/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                    </defs>
+                    <!-- Orbit ellipse -->
+                    <ellipse cx="100" cy="100" rx="75" ry="30" fill="none" stroke="rgba(101, 216, 255, 0.25)" stroke-width="1.5" stroke-dasharray="3 3" transform="rotate(-15 100 100)" />
+                    <!-- Planet Mars -->
+                    <circle cx="100" cy="100" r="36" fill="url(#planet-gradient)" />
+                    <!-- Elliptical orbiting dot using math scale rotator -->
+                    <g transform="translate(100, 100) rotate(-15) scale(1, 0.4)">
+                      <g class="orbit-rotator">
+                        <circle cx="75" cy="0" r="5" fill="#65d8ff" filter="url(#glow-effect)" />
+                        <!-- Tail line -->
+                        <line x1="75" y1="0" x2="60" y2="0" stroke="rgba(101, 216, 255, 0.6)" stroke-width="1.5" />
+                      </g>
+                    </g>
+                  </svg>
+                </div>
+
+                <!-- Stage Status Bars -->
+                <div class="hud-stages">
+                  <div class="hud-stage-row">
+                    <div class="stage-info">
+                      <span class="stage-label">STAGE 1 // BOOSTER 12</span>
+                      <span class="stage-status text-green">SEPARATED // ENTRY BURN</span>
+                    </div>
+                    <div class="hud-progress"><span class="hud-progress-fill stage-1-fill" style="width: 100%"></span></div>
+                  </div>
+                  <div class="hud-stage-row">
+                    <div class="stage-info">
+                      <span class="stage-label">STAGE 2 // SHIP 28</span>
+                      <span class="stage-status text-cyan">ORBITAL INSERTION SEQ</span>
+                    </div>
+                    <div class="hud-progress"><span class="hud-progress-fill stage-2-fill" style="width: 48%"></span></div>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <!-- Live Telemetry Readouts (Actual SpaceX stats) -->
+            <section class="telemetry-readouts-wrapper">
+              <div class="source-line">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="sourceLabel">LOADING TELEMETRY SOURCE...</span>
+              </div>
+              <div class="telemetry-grid" id="heroMetrics"></div>
+              <div class="timezone-control" aria-label="タイムゾーン選択">
+                <button class="time-option is-active" type="button" data-zone="local">LOCAL TZ</button>
+                <button class="time-option" type="button" data-zone="jst">JST (東京)</button>
+                <button class="time-option" type="button" data-zone="utc">UTC (協定世界時)</button>
+              </div>
+            </section>
+
+            <!-- Command line console style events list -->
+            <section class="content-band console-band">
+              <div class="hud-panel-bracket"></div>
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">CONSOLE SYSTEM LOG</p>
+                  <h2>LIVE EVENT FEED</h2>
+                </div>
+                <button class="text-button" type="button" data-view-jump="launches">VIEW FULL ARCHIVE &gt;</button>
+              </div>
+              <div class="signal-grid terminal-signal-grid" id="signalGrid"></div>
+            </section>
+
+          </div>
         </section>
 
+        <!-- Launches View -->
         <section class="view" id="launches" aria-labelledby="launchesTitle">
           <section class="content-band compact">
+            <div class="hud-panel-bracket"></div>
             <div class="section-heading">
               <div>
-                <p class="eyebrow">打ち上げリスト</p>
-                <h2 id="launchesTitle">打ち上げ一覧</h2>
+                <p class="eyebrow">TACTICAL SEARCH DATABASE</p>
+                <h2 id="launchesTitle">LAUNCH LOGGER</h2>
               </div>
               <div class="search-wrap">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 20-4.2-4.2m1.2-5A6.2 6.2 0 1 1 4.6 10.8 6.2 6.2 0 0 1 17 10.8z" /></svg>
-                <input id="launchSearch" type="search" placeholder="ミッション、射場、軌道で検索" autocomplete="off" />
+                <input id="launchSearch" type="search" placeholder="MISSION, Pad, or Orbit..." autocomplete="off" />
               </div>
             </div>
-            <div class="mobile-visual-card section-visual" aria-hidden="true">
-              <img src="assets/launch-hero.png" alt="" />
-            </div>
             <div class="filter-row" id="filterRow">
-              <button class="filter-chip is-active" type="button" data-filter="all">すべて</button>
-              <button class="filter-chip" type="button" data-filter="upcoming">予定</button>
-              <button class="filter-chip" type="button" data-filter="starlink">Starlink</button>
-              <button class="filter-chip" type="button" data-filter="falcon9">Falcon 9</button>
-              <button class="filter-chip" type="button" data-filter="starship">Starship</button>
-              <button class="filter-chip" type="button" data-filter="favorites">お気に入り</button>
+              <button class="filter-chip is-active" type="button" data-filter="all">ALL LOGGER</button>
+              <button class="filter-chip" type="button" data-filter="upcoming">PLANNED</button>
+              <button class="filter-chip" type="button" data-filter="starlink">STARLINK</button>
+              <button class="filter-chip" type="button" data-filter="falcon9">FALCON 9</button>
+              <button class="filter-chip" type="button" data-filter="starship">STARSHIP</button>
+              <button class="filter-chip" type="button" data-filter="favorites">FAVORITES</button>
             </div>
             <div class="launch-list" id="launchList"></div>
           </section>
         </section>
 
+        <!-- Stats View -->
         <section class="view" id="stats" aria-labelledby="statsTitle">
           <section class="content-band compact">
+            <div class="hud-panel-bracket"></div>
             <div class="section-heading">
               <div>
-                <p class="eyebrow">打ち上げ分析</p>
-                <h2 id="statsTitle">頻度と累計</h2>
+                <p class="eyebrow">TELEMETRY ANALYTICS</p>
+                <h2 id="statsTitle">FREQUENCY & ACCUMULATIVE DATA</h2>
               </div>
               <span class="data-timestamp" id="dataTimestamp">--</span>
-            </div>
-            <div class="mobile-visual-card section-visual" aria-hidden="true">
-              <img src="assets/launch-hero.png" alt="" />
             </div>
             <div class="stat-grid" id="statGrid"></div>
             <div class="analytics-layout">
               <article class="chart-panel">
+                <div class="hud-panel-bracket"></div>
                 <div class="panel-title">
-                  <h3>月別打ち上げ数</h3>
+                  <h3>MONTHLY LAUNCH VELOCITY</h3>
                   <span id="monthlyTotal">--</span>
                 </div>
                 <div class="bar-chart" id="monthlyChart"></div>
               </article>
               <article class="chart-panel">
+                <div class="hud-panel-bracket"></div>
                 <div class="panel-title">
-                  <h3>ロケット別内訳</h3>
-                  <span>取得範囲</span>
+                  <h3>LAUNCH VEHICLE MIX</h3>
+                  <span>CONFIG SPECS</span>
                 </div>
                 <div class="mix-list" id="rocketMix"></div>
               </article>
               <article class="chart-panel wide">
+                <div class="hud-panel-bracket"></div>
                 <div class="panel-title">
-                  <h3>射場別内訳</h3>
-                  <span>最近の打ち上げ</span>
+                  <h3>LAUNCH PAD DISTRIBUTION</h3>
+                  <span>RECENT LOCATIONS</span>
                 </div>
                 <div class="pad-grid" id="padGrid"></div>
               </article>
@@ -228,17 +363,16 @@
           </section>
         </section>
 
+        <!-- Fleet View -->
         <section class="view" id="fleet" aria-labelledby="fleetTitle">
           <section class="content-band compact">
+            <div class="hud-panel-bracket"></div>
             <div class="section-heading">
               <div>
-                <p class="eyebrow">機体分析</p>
-                <h2 id="fleetTitle">ロケットと再使用の傾向</h2>
+                <p class="eyebrow">BOOSTER REUSE MONITOR</p>
+                <h2 id="fleetTitle">FLEET INTEGRATION</h2>
               </div>
               <span class="data-timestamp" id="fleetTimestamp">--</span>
-            </div>
-            <div class="mobile-visual-card section-visual" aria-hidden="true">
-              <img src="assets/launch-hero.png" alt="" />
             </div>
             <div class="fleet-overview" id="fleetOverview"></div>
             <div class="fleet-grid" id="fleetGrid"></div>
@@ -247,12 +381,14 @@
       </main>
 
       <footer class="footer">
-        <span>データ: The Space Devs Launch Library 2</span>
-        <span>ビジュアル素材はこのプロトタイプ用に作成</span>
+        <span>CONSOLE ENGINE v3.5 // DATA SOURCE: THE SPACE DEVS API</span>
+        <span>SECURITY ENCRYPTED // TELEMETRY PROTOCOL ACTIVE</span>
       </footer>
     </div>
 
+    <!-- Details Dialog -->
     <dialog class="mission-dialog" id="missionDialog">
+      <div class="hud-panel-bracket"></div>
       <button class="dialog-close" id="dialogClose" type="button" aria-label="閉じる">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
       </button>
