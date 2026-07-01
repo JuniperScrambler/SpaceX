@@ -1,4 +1,4 @@
-const CACHE_NAME = "spacex-tracker-v11";
+const CACHE_NAME = "spacex-tracker-v15";
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -33,6 +33,20 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(cacheFirst(request));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = new URL(event.notification.data?.url || "./#launches", self.location.href).href;
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+      const existing = windowClients.find((client) => client.url.startsWith(self.location.origin));
+      if (existing) {
+        return existing.navigate(targetUrl).then((client) => client?.focus());
+      }
+      return clients.openWindow(targetUrl);
+    }),
+  );
 });
 
 async function cacheFirst(request) {
