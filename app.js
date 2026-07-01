@@ -5,8 +5,13 @@ const PREVIOUS_URL = `${API_ROOT}/previous/?search=SpaceX&limit=150&ordering=-ne
 const CACHE_KEY = "spacex-tracker-cache-v1";
 const FAVORITES_KEY = "spacex-tracker-favorites";
 const TZ_KEY = "spacex-tracker-timezone";
+const SNAPSHOT_KEY = "spacex-tracker-launch-snapshot-v1";
+const CHANGE_EVENTS_KEY = "spacex-tracker-change-events-v1";
+const NOTIFICATIONS_KEY = "spacex-tracker-notifications";
+const NOTIFIED_KEY = "spacex-tracker-notified-events-v1";
 const VIEW_ORDER = ["home", "launches", "stats", "fleet"];
 const SWIPE_THRESHOLD = 58;
+const PAGE_SIZE = 10;
 const MONTH_LABELS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
 
 const state = {
@@ -16,10 +21,13 @@ const state = {
   stats: {},
   source: "loading",
   lastUpdated: null,
-  activeFilter: "all",
+  activeFilter: "upcoming",
   search: "",
+  visibleLaunchCount: PAGE_SIZE,
+  changes: readStoredChanges(),
   timeZoneMode: localStorage.getItem(TZ_KEY) || "local",
-  favorites: new Set(JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]")),
+  favorites: new Set(readStoredArray(FAVORITES_KEY)),
+  notificationsEnabled: localStorage.getItem(NOTIFICATIONS_KEY) === "enabled",
   deferredInstallPrompt: null,
   swipeStart: null,
 };
@@ -31,6 +39,7 @@ const els = {
   jumpButtons: document.querySelectorAll("[data-view-jump]"),
   refreshButton: document.getElementById("refreshButton"),
   installButton: document.getElementById("installButton"),
+  headerFreshness: document.getElementById("headerFreshness"),
   sourceLabel: document.getElementById("sourceLabel"),
   statusDot: document.getElementById("statusDot"),
   heroMetrics: document.getElementById("heroMetrics"),
@@ -39,11 +48,20 @@ const els = {
   nextMissionTime: document.getElementById("nextMissionTime"),
   nextMissionPad: document.getElementById("nextMissionPad"),
   nextMissionStatus: document.getElementById("nextMissionStatus"),
+  nextMissionLinks: document.getElementById("nextMissionLinks"),
   countdown: document.getElementById("countdown"),
-  signalGrid: document.getElementById("signalGrid"),
+  changeList: document.getElementById("changeList"),
+  changesUpdatedAt: document.getElementById("changesUpdatedAt"),
+  ackChangesButton: document.getElementById("ackChangesButton"),
+  upcomingWeekGrid: document.getElementById("upcomingWeekGrid"),
+  recentResultGrid: document.getElementById("recentResultGrid"),
+  notificationButton: document.getElementById("notificationButton"),
+  notificationNote: document.getElementById("notificationNote"),
   launchSearch: document.getElementById("launchSearch"),
   filterRow: document.getElementById("filterRow"),
   launchList: document.getElementById("launchList"),
+  launchListSummary: document.getElementById("launchListSummary"),
+  loadMoreButton: document.getElementById("loadMoreButton"),
   statGrid: document.getElementById("statGrid"),
   monthlyChart: document.getElementById("monthlyChart"),
   monthlyTotal: document.getElementById("monthlyTotal"),
@@ -65,12 +83,14 @@ function init() {
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";
   bindUi();
   setTimeZoneButtons();
+  updateNotificationUi();
   setView(getInitialView(), { replace: true, scroll: false });
   window.scrollTo(0, 0);
   window.addEventListener("load", () => window.scrollTo(0, 0), { once: true });
   primeInitialData();
   loadData();
   window.setInterval(renderCountdown, 1000);
+  window.setInterval(checkFavoriteNotifications, 60000);
   registerServiceWorker();
 }
 
@@ -86,8 +106,13 @@ function bindUi() {
   els.refreshButton.addEventListener("click", () => loadData({ force: true }));
   bindSwipeNavigation();
 
+  els.filterRow.querySelectorAll(".filter-chip").forEach((chip) => {
+    chip.setAttribute("aria-pressed", String(chip.dataset.filter === state.activeFilter));
+  });
+
   els.launchSearch.addEventListener("input", (event) => {
     state.search = event.target.value.trim().toLowerCase();
+    state.visibleLaunchCount = PAGE_SIZE;
     renderLaunchList();
   });
 
@@ -95,11 +120,21 @@ function bindUi() {
     const button = event.target.closest("[data-filter]");
     if (!button) return;
     state.activeFilter = button.dataset.filter;
+    state.visibleLaunchCount = PAGE_SIZE;
     els.filterRow.querySelectorAll(".filter-chip").forEach((chip) => {
       chip.classList.toggle("is-active", chip === button);
+      chip.setAttribute("aria-pressed", String(chip === button));
     });
     renderLaunchList();
   });
+
+  els.loadMoreButton.addEventListener("click", () => {
+    state.visibleLaunchCount += PAGE_SIZE;
+    renderLaunchList();
+  });
+
+  els.ackChangesButton.addEventListener("click", acknowledgeChanges);
+  els.notificationButton.addEventListener("click", enableNotifications);
 
   els.timeOptions.forEach((button) => {
     button.addEventListener("click", () => {
@@ -145,7 +180,10 @@ function setView(viewName, options = {}) {
     view.classList.toggle("is-active", view.id === nextView);
   });
   els.navTabs.forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.view === nextView);
+    const isActive = button.dataset.view === nextView;
+    button.classList.toggle("is-active", isActive);
+    if (isActive) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
   });
   updateNavFlight(nextView);
   if (options.replace) {
@@ -276,8 +314,10 @@ async function loadData({ force = false } = {}) {
     }
 
     state.launches = mergeLaunches(state.upcoming, state.previous);
+    if (state.source === "live") processLaunchChanges();
     state.stats = deriveStats();
     renderAll();
+    checkFavoriteNotifications();
   } finally {
     setRefreshState(false);
   }
@@ -337,6 +377,98 @@ function writeCachedData() {
   } catch {
     localStorage.removeItem(CACHE_KEY);
   }
+}
+
+function readStoredArray(key) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+}
+
+function readStoredChanges() {
+  const oldest = Date.now() - 7 * 86400000;
+  return readStoredArray(CHANGE_EVENTS_KEY).filter((change) => new Date(change.detectedAt).getTime() >= oldest);
+}
+
+function readLaunchSnapshot() {
+  return readStoredArray(SNAPSHOT_KEY);
+}
+
+function writeLaunchSnapshot(launches) {
+  const snapshot = launches.map((launch) => ({
+    id: launch.id,
+    name: launch.name,
+    net: launch.net,
+    status: rawStatusName(launch),
+  }));
+  localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshot));
+}
+
+function processLaunchChanges() {
+  const previousSnapshot = readLaunchSnapshot();
+  const detected = previousSnapshot.length ? detectLaunchChanges(previousSnapshot, state.launches) : [];
+  if (detected.length) {
+    state.changes = detected;
+    localStorage.setItem(CHANGE_EVENTS_KEY, JSON.stringify(detected));
+    notifyFavoriteChanges(detected);
+  }
+  writeLaunchSnapshot(state.launches);
+}
+
+function detectLaunchChanges(previousSnapshot, currentLaunches) {
+  const previousById = new Map(previousSnapshot.map((launch) => [launch.id, launch]));
+  const now = Date.now();
+  const newMissionLimit = now + 30 * 86400000;
+  const detectedAt = new Date().toISOString();
+  const changes = [];
+
+  currentLaunches.forEach((launch) => {
+    const previous = previousById.get(launch.id);
+    const launchTime = new Date(launch.net).getTime();
+    if (!previous) {
+      if (launchTime > now && launchTime <= newMissionLimit) {
+        changes.push({ id: launch.id, type: "new", label: "新規", name: launch.name, after: launch.net, detectedAt });
+      }
+      return;
+    }
+
+    const beforeTime = new Date(previous.net).getTime();
+    if (Number.isFinite(beforeTime) && Number.isFinite(launchTime) && Math.abs(launchTime - beforeTime) >= 60000) {
+      changes.push({ id: launch.id, type: "time", label: "時刻変更", name: launch.name, before: previous.net, after: launch.net, detectedAt });
+    }
+
+    const beforeStatus = String(previous.status || "").toLowerCase();
+    const afterStatus = rawStatusName(launch);
+    if (beforeStatus && afterStatus && beforeStatus !== afterStatus.toLowerCase()) {
+      changes.push({ id: launch.id, type: "status", label: "状態更新", name: launch.name, before: previous.status, after: afterStatus, detectedAt });
+    }
+  });
+
+  return changes
+    .sort((a, b) => changePriority(a.type) - changePriority(b.type))
+    .slice(0, 12);
+}
+
+function changePriority(type) {
+  if (type === "status") return 0;
+  if (type === "time") return 1;
+  return 2;
+}
+
+function changeDetail(change) {
+  if (change.type === "time") return `${formatDate(change.before)} → ${formatDate(change.after)}`;
+  if (change.type === "status") return `${statusLabel(change.before)} → ${statusLabel(change.after)}`;
+  if (change.type === "new") return `${formatDate(change.after)}の予定として追加`;
+  return "情報が更新されました";
+}
+
+function acknowledgeChanges() {
+  state.changes = [];
+  localStorage.removeItem(CHANGE_EVENTS_KEY);
+  renderChanges();
 }
 
 function cleanLaunches(launches) {
@@ -403,8 +535,8 @@ function pick(source, keys) {
 function normalizeLinks(links = []) {
   return links
     .map((link) => {
-      if (typeof link === "string") return { url: link };
-      return pick(link, ["url", "name"]);
+      const item = typeof link === "string" ? { url: link } : pick(link, ["url", "name"]);
+      return { ...item, url: safeExternalUrl(item.url) };
     })
     .filter((link) => link.url)
     .slice(0, 3);
@@ -462,11 +594,13 @@ function renderAll() {
   renderSource();
   renderHeroMetrics();
   renderNextMission();
-  renderSignals();
+  renderChanges();
+  renderActivity();
   renderLaunchList();
   renderStats();
   renderFleet();
   renderTimestamps();
+  updateNotificationUi();
 }
 
 function renderSource() {
@@ -478,11 +612,31 @@ function renderSource() {
     "rate-limited-cache": "API制限中 (キャッシュ表示)",
     "rate-limited-sample": "API制限中 (サンプル表示)",
   };
-  els.sourceLabel.textContent = labels[state.source] || labels.sample;
+  const sourceText = labels[state.source] || labels.sample;
+  const updatedText = state.lastUpdated ? `・最終更新 ${formatDate(state.lastUpdated)}` : "";
+  els.sourceLabel.textContent = `${sourceText}${updatedText}`;
   els.statusDot.className = "status-dot";
+  els.headerFreshness.className = "header-freshness";
   if (state.source === "live") els.statusDot.classList.add("live");
-  if (state.source === "cached" || state.source === "rate-limited-cache") els.statusDot.classList.add("cached");
-  if (state.source === "sample" || state.source === "rate-limited-sample") els.statusDot.classList.add("offline");
+  if (state.source === "cached" || state.source === "rate-limited-cache") {
+    els.statusDot.classList.add("cached");
+    els.headerFreshness.classList.add("is-cached");
+  }
+  if (state.source === "sample" || state.source === "rate-limited-sample") {
+    els.statusDot.classList.add("offline");
+    els.headerFreshness.classList.add("is-offline");
+  }
+  if (state.source === "loading") els.headerFreshness.classList.add("is-loading");
+
+  const freshnessLabels = {
+    loading: "データ取得中",
+    live: state.lastUpdated ? `ライブ・${formatClock(state.lastUpdated)}` : "ライブデータ",
+    cached: state.lastUpdated ? `保存データ・${formatAge(state.lastUpdated)}` : "保存データ",
+    sample: "サンプル表示",
+    "rate-limited-cache": "API制限・保存データ",
+    "rate-limited-sample": "API制限・サンプル",
+  };
+  els.headerFreshness.textContent = freshnessLabels[state.source] || "状態不明";
 }
 
 function setSourceState(source) {
@@ -518,6 +672,7 @@ function renderNextMission() {
     els.nextMissionTime.textContent = "--";
     els.nextMissionPad.textContent = "--";
     els.nextMissionStatus.textContent = "--";
+    els.nextMissionLinks.innerHTML = "";
     renderCountdown();
     return;
   }
@@ -526,7 +681,19 @@ function renderNextMission() {
   els.nextMissionTime.textContent = formatDate(next.net);
   els.nextMissionPad.textContent = padName(next);
   els.nextMissionStatus.textContent = statusName(next);
+  renderNextMissionLinks(next);
   renderCountdown();
+}
+
+function renderNextMissionLinks(launch) {
+  const video = launch.vid_urls?.[0];
+  const info = launch.info_urls?.find((link) => link.url !== video?.url) || launch.info_urls?.[0];
+  const links = [];
+  if (video?.url) links.push(`<a class="mission-link primary" href="${escapeAttribute(video.url)}" target="_blank" rel="noopener noreferrer">配信を見る</a>`);
+  if (info?.url) links.push(`<a class="mission-link" href="${escapeAttribute(info.url)}" target="_blank" rel="noopener noreferrer">公式・関連情報</a>`);
+  links.push(`<button class="mission-link" type="button" data-next-detail="${escapeAttribute(launch.id)}">ミッション詳細</button>`);
+  els.nextMissionLinks.innerHTML = links.join("");
+  els.nextMissionLinks.querySelector("[data-next-detail]")?.addEventListener("click", () => showMissionDetail(launch.id));
 }
 
 function renderCountdown() {
@@ -570,17 +737,44 @@ function setLaunchUrgency(diff) {
   els.nextMissionCard.classList.toggle("is-final-hour", isFinalHour);
 }
 
-function renderSignals() {
-  const nextThree = getFutureLaunches().slice(0, 3);
-  const recent = state.previous.slice(0, 3);
-  const cards = [...nextThree, ...recent].slice(0, 6);
-
-  if (!cards.length) {
-    els.signalGrid.innerHTML = `<div class="empty-state">表示できる打ち上げデータがありません。</div>`;
+function renderChanges() {
+  const changes = state.changes || [];
+  els.ackChangesButton.hidden = changes.length === 0;
+  els.changesUpdatedAt.textContent = changes[0]?.detectedAt ? `検出 ${formatAge(changes[0].detectedAt)}` : "現在まで";
+  if (!changes.length) {
+    els.changeList.innerHTML = `<div class="empty-state">前回の確認以降、大きな変更はありません。</div>`;
     return;
   }
 
-  els.signalGrid.innerHTML = cards
+  els.changeList.innerHTML = changes
+    .slice(0, 8)
+    .map(
+      (change) => `
+        <article class="change-item">
+          <span class="change-type ${escapeAttribute(change.type)}">${escapeHtml(change.label)}</span>
+          <div class="change-copy">
+            <strong>${escapeHtml(shortLaunchName(change.name))}</strong>
+            <span>${escapeHtml(changeDetail(change))}</span>
+          </div>
+          <span class="change-detected">${escapeHtml(formatAge(change.detectedAt))}</span>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function renderActivity() {
+  const now = Date.now();
+  const sevenDays = now + 7 * 86400000;
+  const upcomingWeek = getFutureLaunches().filter((launch) => new Date(launch.net).getTime() <= sevenDays).slice(0, 4);
+  const recentResults = [...state.previous].sort((a, b) => new Date(b.net) - new Date(a.net)).slice(0, 4);
+  els.upcomingWeekGrid.innerHTML = renderActivityCards(upcomingWeek, "7日以内に登録された打ち上げはありません。");
+  els.recentResultGrid.innerHTML = renderActivityCards(recentResults, "最近の打ち上げ結果を取得できませんでした。");
+}
+
+function renderActivityCards(launches, emptyMessage) {
+  if (!launches.length) return `<div class="empty-state">${escapeHtml(emptyMessage)}</div>`;
+  return launches
     .map((launch) => {
       const future = new Date(launch.net) > new Date();
       return `
@@ -598,9 +792,13 @@ function renderSignals() {
     .join("");
 }
 
+
 function renderLaunchList() {
-  const launches = filteredLaunches();
-  if (!launches.length) {
+  const filtered = filteredLaunches();
+  const launches = filtered.slice(0, state.visibleLaunchCount);
+  els.launchListSummary.textContent = `${filtered.length}件中 ${launches.length}件を表示`;
+  els.loadMoreButton.hidden = launches.length >= filtered.length;
+  if (!filtered.length) {
     els.launchList.innerHTML = `<div class="empty-state">条件に合うミッションがありません。</div>`;
     return;
   }
@@ -650,6 +848,7 @@ function filteredLaunches() {
   return state.launches
     .filter((launch) => {
       if (state.activeFilter === "upcoming") return new Date(launch.net) > now;
+      if (state.activeFilter === "completed") return new Date(launch.net) <= now;
       if (state.activeFilter === "starlink") return launchText(launch).includes("starlink");
       if (state.activeFilter === "falcon9") return launchText(launch).includes("falcon 9");
       if (state.activeFilter === "starship") return launchText(launch).includes("starship");
@@ -664,8 +863,7 @@ function filteredLaunches() {
       if (aFuture) return -1;
       if (bFuture) return 1;
       return new Date(b.net) - new Date(a.net);
-    })
-    .slice(0, 60);
+    });
 }
 
 function renderStats() {
@@ -836,6 +1034,100 @@ function getFutureLaunches() {
     .sort((a, b) => new Date(a.net) - new Date(b.net));
 }
 
+async function enableNotifications() {
+  if (!notificationsAvailable()) {
+    els.notificationNote.textContent = "このブラウザでは通知を利用できません。iPhoneではホーム画面に追加したPWAから設定してください。";
+    updateNotificationUi();
+    return;
+  }
+
+  if (state.notificationsEnabled) {
+    state.notificationsEnabled = false;
+    localStorage.removeItem(NOTIFICATIONS_KEY);
+    updateNotificationUi();
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+  state.notificationsEnabled = permission === "granted";
+  if (state.notificationsEnabled) {
+    localStorage.setItem(NOTIFICATIONS_KEY, "enabled");
+    els.notificationNote.textContent = "通知を有効にしました。お気に入りの24時間前・1時間前と予定変更を確認します。";
+    checkFavoriteNotifications();
+  } else {
+    localStorage.removeItem(NOTIFICATIONS_KEY);
+    els.notificationNote.textContent = "通知が許可されていません。端末の設定から変更できます。";
+  }
+  updateNotificationUi();
+}
+
+function notificationsAvailable() {
+  return "Notification" in window && "serviceWorker" in navigator;
+}
+
+function updateNotificationUi() {
+  const available = notificationsAvailable();
+  const granted = available && Notification.permission === "granted";
+  if (state.notificationsEnabled && !granted) {
+    state.notificationsEnabled = false;
+    localStorage.removeItem(NOTIFICATIONS_KEY);
+  }
+  els.notificationButton.disabled = !available;
+  els.notificationButton.classList.toggle("is-enabled", state.notificationsEnabled);
+  els.notificationButton.textContent = !available
+    ? "通知はPWAで利用できます"
+    : state.notificationsEnabled
+      ? "お気に入り通知を停止"
+      : "お気に入り通知を有効化";
+}
+
+async function checkFavoriteNotifications() {
+  if (!state.notificationsEnabled || !notificationsAvailable() || Notification.permission !== "granted") return;
+  const now = Date.now();
+  const notified = new Set(readStoredArray(NOTIFIED_KEY));
+  const upcomingFavorites = getFutureLaunches().filter((launch) => state.favorites.has(launch.id));
+
+  for (const launch of upcomingFavorites) {
+    const remaining = new Date(launch.net).getTime() - now;
+    if (remaining <= 0 || remaining > 86400000) continue;
+    const threshold = remaining <= 3600000 ? "1h" : "24h";
+    const key = `${launch.id}:${threshold}:${launch.net}`;
+    if (notified.has(key)) continue;
+    const timing = threshold === "1h" ? "1時間以内" : "24時間以内";
+    await displayNotification(`SpaceX打ち上げ ${timing}`, `${shortLaunchName(launch.name)}\n${formatDate(launch.net)}`, key);
+    notified.add(key);
+  }
+
+  localStorage.setItem(NOTIFIED_KEY, JSON.stringify(Array.from(notified).slice(-100)));
+}
+
+async function notifyFavoriteChanges(changes) {
+  if (!state.notificationsEnabled || !notificationsAvailable() || Notification.permission !== "granted") return;
+  const notified = new Set(readStoredArray(NOTIFIED_KEY));
+  for (const change of changes.filter((item) => state.favorites.has(item.id)).slice(0, 3)) {
+    const key = `change:${change.id}:${change.type}:${change.after}`;
+    if (notified.has(key)) continue;
+    await displayNotification(`お気に入りの${change.label}`, `${shortLaunchName(change.name)}\n${changeDetail(change)}`, key);
+    notified.add(key);
+  }
+  localStorage.setItem(NOTIFIED_KEY, JSON.stringify(Array.from(notified).slice(-100)));
+}
+
+async function displayNotification(title, body, tag) {
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    await registration.showNotification(title, {
+      body,
+      tag,
+      icon: "assets/icon.svg",
+      badge: "assets/icon.svg",
+      data: { url: "./#launches" },
+    });
+  } catch (error) {
+    console.warn("Notification failed:", error);
+  }
+}
+
 function toggleFavorite(id) {
   if (state.favorites.has(id)) {
     state.favorites.delete(id);
@@ -844,13 +1136,15 @@ function toggleFavorite(id) {
   }
   localStorage.setItem(FAVORITES_KEY, JSON.stringify(Array.from(state.favorites)));
   renderLaunchList();
+  checkFavoriteNotifications();
 }
 
 function showMissionDetail(id) {
   const launch = state.launches.find((item) => item.id === id);
   if (!launch) return;
   const image = imageUrl(launch) || "assets/launch-hero.png";
-  const infoLinks = [...(launch.info_urls || []), ...(launch.vid_urls || [])];
+  const infoLink = launch.info_urls?.[0];
+  const videoLink = launch.vid_urls?.[0];
   const originalDescription = launch.mission?.description;
   els.dialogContent.innerHTML = `
     <div class="dialog-hero" style="--dialog-image: url('${escapeAttribute(image)}')"></div>
@@ -875,11 +1169,10 @@ function showMissionDetail(id) {
             </details>`
           : `<p class="dialog-note">Launch Libraryには、詳しい英語説明がまだ登録されていません。</p>`
       }
-      ${
-        infoLinks.length
-          ? `<p><a href="${escapeAttribute(infoLinks[0].url)}" target="_blank" rel="noreferrer">関連リンクを開く</a></p>`
-          : ""
-      }
+      <div class="mission-actions dialog-actions">
+        ${videoLink?.url ? `<a class="mission-link primary" href="${escapeAttribute(videoLink.url)}" target="_blank" rel="noopener noreferrer">配信を見る</a>` : ""}
+        ${infoLink?.url ? `<a class="mission-link" href="${escapeAttribute(infoLink.url)}" target="_blank" rel="noopener noreferrer">公式・関連情報</a>` : ""}
+      </div>
     </div>
   `;
   els.dialog.showModal();
@@ -1091,6 +1384,28 @@ function imageUrl(launch) {
   return launch.image?.thumbnail_url || launch.image?.image_url || launch.mission?.image?.thumbnail_url || "";
 }
 
+function formatClock(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--";
+  const options = { hour: "2-digit", minute: "2-digit" };
+  if (state.timeZoneMode === "jst") options.timeZone = "Asia/Tokyo";
+  if (state.timeZoneMode === "utc") options.timeZone = "UTC";
+  return new Intl.DateTimeFormat("ja-JP", options).format(date);
+}
+
+function formatAge(value) {
+  const time = new Date(value).getTime();
+  if (!Number.isFinite(time)) return "--";
+  const minutes = Math.max(0, Math.floor((Date.now() - time) / 60000));
+  if (minutes < 1) return "たった今";
+  if (minutes < 60) return `${minutes}分前`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}時間前`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}日前`;
+  return formatDate(value);
+}
+
 function formatDate(value) {
   if (!value) return "--";
   const date = new Date(value);
@@ -1127,6 +1442,15 @@ function escapeHtml(value) {
 
 function escapeAttribute(value) {
   return escapeHtml(value).replaceAll("`", "&#096;");
+}
+
+function safeExternalUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+  } catch {
+    return "";
+  }
 }
 
 function registerServiceWorker() {
